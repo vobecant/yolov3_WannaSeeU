@@ -56,7 +56,10 @@ def test(
 
         # Compute average precision for each sample
         for si, detections in enumerate(output):
-            labels = targets[targets[:, 0] == si, 1:]
+            if len(targets)==0:
+                labels = []
+            else:
+                labels = targets[targets[:, 0] == si, 1:]
             seen += 1
 
             if detections is None:

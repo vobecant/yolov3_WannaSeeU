@@ -2,6 +2,7 @@ import glob
 import math
 import os
 import random
+import warnings
 
 import cv2
 import numpy as np
@@ -90,13 +91,14 @@ class LoadWebcam:  # for inference
 
 
 class LoadImagesAndLabels:  # for training
-    def __init__(self, path, batch_size=1, img_size=608, augment=False):
+    def __init__(self, path, batch_size=1, img_size=608, augment=False, label_split=''):
         with open(path, 'r') as file:
             self.img_files = file.readlines()
             self.img_files = [x.replace('\n', '') for x in self.img_files]
             self.img_files = list(filter(lambda x: len(x) > 0, self.img_files))
 
-        self.label_files = [x.replace('images', 'labels').replace('.png', '.txt').replace('.jpg', '.txt')
+        label_dir = 'labels{}'.format('' if label_split == '' else '_{}'.format(label_split))
+        self.label_files = [x.replace('images', label_dir).replace('.png', '.txt').replace('.jpg', '.txt')
                             for x in self.img_files]
 
         self.nF = len(self.img_files)  # number of image files
@@ -155,7 +157,10 @@ class LoadImagesAndLabels:  # for training
 
             # Load labels
             if os.path.isfile(label_path):
-                labels0 = np.loadtxt(label_path, dtype=np.float32).reshape(-1, 5)
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    labels0 = np.loadtxt(label_path, dtype=np.float32).reshape(-1, 5)
 
                 # Normalized xywh to pixel xyxy format
                 labels = labels0.copy()
@@ -211,7 +216,12 @@ class LoadImagesAndLabels:  # for training
         img_all = np.ascontiguousarray(img_all, dtype=np.float32)
         img_all /= 255.0
 
-        labels_all = torch.from_numpy(np.concatenate(labels_all, 0))
+        if len(labels_all) == 0:
+            labels_all = torch.from_numpy(np.asarray([]))
+            # print('No labels! labels_all = {}, shape: {}'.format(labels_all, labels_all.shape))
+        else:
+            labels_all = torch.from_numpy(np.concatenate(labels_all, 0))
+            # print('Labels detected. labels_all = {}, shape: {}'.format(labels_all, labels_all.shape))
         return torch.from_numpy(img_all), labels_all, img_paths, img_shapes
 
     def __len__(self):

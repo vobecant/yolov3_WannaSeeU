@@ -6,7 +6,7 @@ from utils.utils import *
 ONNX_EXPORT = False
 
 
-def create_modules(module_defs):
+def create_modules(module_defs, device):
     """
     Constructs module list of layer blocks from module configuration in module_defs
     """
@@ -64,7 +64,7 @@ def create_modules(module_defs):
             nC = int(module_def['classes'])  # number of classes
             img_size = int(hyperparams['height'])
             # Define detection layer
-            yolo_layer = YOLOLayer(anchors, nC, img_size, yolo_layer_count, cfg=hyperparams['cfg'])
+            yolo_layer = YOLOLayer(anchors, nC, img_size, yolo_layer_count, cfg=hyperparams['cfg'], device=device)
             modules.add_module('yolo_%d' % i, yolo_layer)
             yolo_layer_count += 1
 
@@ -98,14 +98,14 @@ class Upsample(nn.Module):
 
 
 class YOLOLayer(nn.Module):
-    def __init__(self, anchors, nC, img_size, yolo_layer, cfg):
+    def __init__(self, anchors, nC, img_size, yolo_layer, cfg, device):
         super(YOLOLayer, self).__init__()
 
         self.anchors = torch.FloatTensor(anchors)
         self.nA = len(anchors)  # number of anchors (3)
         self.nC = nC  # number of classes (80)
         self.img_size = 0
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         create_grids(self, 32, 1, device=device)
 
         if ONNX_EXPORT:  # grids must be computed in __init__
@@ -167,13 +167,13 @@ class YOLOLayer(nn.Module):
 class Darknet(nn.Module):
     """YOLOv3 object detection model"""
 
-    def __init__(self, cfg_path, img_size=416):
+    def __init__(self, cfg_path, device, img_size=416):
         super(Darknet, self).__init__()
 
         self.module_defs = parse_model_cfg(cfg_path)
         self.module_defs[0]['cfg'] = cfg_path
         self.module_defs[0]['height'] = img_size
-        self.hyperparams, self.module_list = create_modules(self.module_defs)
+        self.hyperparams, self.module_list = create_modules(self.module_defs, device)
         self.img_size = img_size
         self.loss_names = ['loss', 'xy', 'wh', 'conf', 'cls', 'nT']
         self.losses = []

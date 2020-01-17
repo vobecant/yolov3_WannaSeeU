@@ -1,6 +1,8 @@
 import argparse
 import time
 
+from torchvision.transforms import ToPILImage
+
 import test  # Import test.py to get mAP after each epoch
 from models import *
 from utils.datasets import *
@@ -8,6 +10,7 @@ from utils.utils import *
 
 
 def train(
+        opt,
         cfg,
         data_cfg,
         img_size=416,
@@ -17,11 +20,13 @@ def train(
         accumulate=1,
         multi_scale=False,
         freeze_backbone=False,
+        device=None
 ):
     weights = 'weights' + os.sep
     latest = weights + 'latest.pt'
     best = weights + 'best.pt'
-    device = torch_utils.select_device()
+    device_given = device is not None
+    device = device if device_given else torch_utils.select_device()
 
     if multi_scale:
         img_size = 608  # initiate with maximum multi_scale size
@@ -32,10 +37,10 @@ def train(
     train_path = parse_data_cfg(data_cfg)['train']
 
     # Initialize model
-    model = Darknet(cfg, img_size)
+    model = Darknet(cfg, device, img_size)
 
     # Get dataloader
-    dataloader = LoadImagesAndLabels(train_path, batch_size, img_size, augment=True)
+    dataloader = LoadImagesAndLabels(train_path, batch_size, img_size, augment=True, label_split=opt.train_labels_split)
 
     lr0 = 0.001  # initial learning rate
     cutoff = -1  # backbone reaches to cutoff layer
@@ -71,7 +76,7 @@ def train(
         # Set optimizer
         optimizer = torch.optim.SGD(model.parameters(), lr=lr0, momentum=.9)
 
-    if torch.cuda.device_count() > 1:
+    if torch.cuda.device_count() > 1 and not device_given:
         model = nn.DataParallel(model)
     model.to(device).train()
 
@@ -108,11 +113,17 @@ def train(
 
         ui = -1
         rloss = defaultdict(float)
+        img_saved = False
         for i, (imgs, targets, _, _) in enumerate(dataloader):
             targets = targets.to(device)
             nT = targets.shape[0]
             if nT == 0:  # if no targets continue
                 continue
+
+            # show training sample
+            if (epoch == 0) and not img_saved:
+                ToPILImage()(imgs[0]).save('train_sample.png')
+                img_saved = True
 
             # SGD burn-in
             if (epoch == 0) and (i <= n_burnin):
@@ -174,8 +185,8 @@ def train(
             if best_loss == rloss['total']:
                 os.system('cp ' + latest + ' ' + best)
 
-            # Save backup weights every 5 epochs (optional)
-            if (epoch > 0) and (epoch % 5 == 0):
+            # Save backup weights every 25 epochs (optional)
+            if (epoch > 0) and (epoch % 25 == 0):
                 os.system('cp ' + latest + ' ' + weights + 'backup{}.pt'.format(epoch))
 
         # Calculate mAP
@@ -192,17 +203,20 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=270, help='number of epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='size of each image batch')
     parser.add_argument('--accumulate', type=int, default=1, help='accumulate gradient x batches before optimizing')
-    parser.add_argument('--cfg', type=str, default='cfg/yolov3.cfg', help='cfg file path')
-    parser.add_argument('--data-cfg', type=str, default='cfg/coco.data', help='coco.data file path')
+    parser.add_argument('--cfg', type=str, default='./cfg/yolov3-1cls.cfg', help='cfg file path')
+    parser.add_argument('--data-cfg', type=str, default='./data/cs_1cls_Valeo.data', help='coco.data file path')
     parser.add_argument('--multi-scale', action='store_true', help='random image sizes per batch 320 - 608')
     parser.add_argument('--img-size', type=int, default=32 * 13, help='pixels')
     parser.add_argument('--resume', action='store_true', help='resume training flag')
+    parser.add_argument('--device', default='cuda:0', type=str)
+    parser.add_argument('--train_labels_split', default='')
     opt = parser.parse_args()
     print(opt, end='\n\n')
 
     init_seeds()
 
     train(
+        opt,
         opt.cfg,
         opt.data_cfg,
         img_size=opt.img_size,
@@ -211,4 +225,5 @@ if __name__ == '__main__':
         batch_size=opt.batch_size,
         accumulate=opt.accumulate,
         multi_scale=opt.multi_scale,
+        device=opt.device
     )
