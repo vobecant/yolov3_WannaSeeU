@@ -137,13 +137,16 @@ def train(
             pred = model(imgs.to(device))
             for pi0, pth in zip(pred, paths):
                 xys = pi0[..., 0:2]
+                xys = xys.view(xys.shape[0], xys.shape[1], -1, xys.shape[-1])
                 whs = pi0[..., 2:4]
+                whs = xys.view(whs.shape[0], whs.shape[1], -1, whs.shape[-1])
                 confs = pi0[..., 4]
-                max_conf_idx = torch.argmax(confs)
+                confs = confs.view(confs.shape[0], confs.shape[1], -1)
+                max_conf_idx = torch.argmax(confs, dim=-1)
                 print('Xys: {}, whs: {}, Confs shape: {}, max idx: {}'.format(xys.shape, whs.shape, confs.shape,
                                                                               max_conf_idx))
-                print('{} xy: {}, wh: {}, conf: {}'.format(pth, xys[max_conf_idx], whs[max_conf_idx],
-                                                           confs[max_conf_idx]))
+                print('{} xy: {}, wh: {}, conf: {}'.format(pth, xys[:, :, max_conf_idx, :], whs[:, :, max_conf_idx, :],
+                                                           confs[:, :, max_conf_idx]))
 
             # Build targets
             target_list = build_targets(model, targets, pred)
