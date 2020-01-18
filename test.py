@@ -25,6 +25,7 @@ def test(
     # Configure run
     data_cfg_dict = parse_data_cfg(data_cfg)
     nC = int(data_cfg_dict['classes'])  # number of classes (80 for COCO)
+    print('Number of classes: {} . {}'.format(nC, load_classes(data_cfg_dict['names'])))
     test_path = data_cfg_dict['valid']
 
     if model is None:
@@ -56,7 +57,7 @@ def test(
 
         # Compute average precision for each sample
         for si, detections in enumerate(output):
-            if len(targets)==0:
+            if len(targets) == 0:
                 labels = []
             else:
                 labels = targets[targets[:, 0] == si, 1:]
