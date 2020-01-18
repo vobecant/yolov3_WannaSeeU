@@ -144,7 +144,7 @@ def train(
                     whs = xys.view(whs.shape[0], -1, whs.shape[-1])
                     confs = pi0[..., 4]
                     confs = confs.view(confs.shape[0], -1)
-                    max_conf_idx = torch.argmax(confs, dim=1)
+                    max_conf_idx = torch.argmax(confs, dim=0)
                     print('Xys: {}, whs: {}, Confs shape: {}, max idx: {}'.format(xys.shape, whs.shape, confs.shape,
                                                                                   max_conf_idx))
                     print('{} xy: {}, wh: {}, conf: {}'.format(pth, xys[:, max_conf_idx, :],
