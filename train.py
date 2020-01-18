@@ -20,11 +20,12 @@ def train(
         accumulate=1,
         multi_scale=False,
         freeze_backbone=False,
-        device=None
+        device=None,
+        name=''
 ):
     weights = 'weights' + os.sep
-    latest = weights + 'latest.pt'
-    best = weights + 'best.pt'
+    latest = weights + 'latest{}.pt'.format(name if name == '' else '_{}'.format(name))
+    best = weights + 'best{}.pt'.format(name if name == '' else '_{}'.format(name))
     device_given = device is not None
     device = device if device_given else torch_utils.select_device()
     print('device: {}'.format(device))
@@ -123,8 +124,7 @@ def train(
 
             # show training sample
             if (epoch == 0) and not img_saved:
-                ToPILImage()(imgs[0]).save('train_sample.png')
-                fname = os.path.join('train_sammple_targets.jpg')
+                fname = os.path.join('train_targets_ep{}.jpg'.format(epoch))
                 plot_images(imgs=imgs, targets=targets, paths=paths, fname=fname)
 
             # SGD burn-in
@@ -212,6 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume', action='store_true', help='resume training flag')
     parser.add_argument('--device', default=None, type=str)
     parser.add_argument('--train_labels_split', default='')
+    parser.add_argument('--name', default='', type=str)
     opt = parser.parse_args()
     print(opt, end='\n\n')
 
