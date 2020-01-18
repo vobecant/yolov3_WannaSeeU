@@ -4,6 +4,8 @@ from collections import defaultdict
 from pathlib import Path
 
 import cv2
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
