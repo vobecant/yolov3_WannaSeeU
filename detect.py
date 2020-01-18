@@ -27,7 +27,7 @@ def detect(
     os.makedirs(output)  # make new output folder
 
     # Initialize model
-    model = Darknet(cfg, img_size)
+    model = Darknet(cfg, device, img_size)
 
     # Load weights
     if weights.endswith('.pt'):  # pytorch format
@@ -58,6 +58,7 @@ def detect(
         else:
             print('image %g/%g %s: ' % (i + 1, len(dataloader), path), end='')
         save_path = str(Path(output) / Path(path).name)
+        print('Save path: {}'.format(save_path))
 
         # Get detections
         img = torch.from_numpy(img).unsqueeze(0).to(device)
@@ -65,6 +66,7 @@ def detect(
             torch.onnx.export(model, img, 'weights/model.onnx', verbose=True)
             return
         pred = model(img)
+        print(pred[:,:,4])
         pred = pred[pred[:, :, 4] > conf_thres]  # remove boxes < threshold
 
         if len(pred) > 0:

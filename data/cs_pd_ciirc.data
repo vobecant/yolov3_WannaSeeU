@@ -1,0 +1,6 @@
+classes=1
+train=./data/cs_train_pd_ciirc.txt
+valid=./data/cs_val_pd_ciirc.txt
+names=data/person.names
+backup=backup/
+eval=coco

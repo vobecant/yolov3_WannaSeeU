@@ -27,6 +27,7 @@ def train(
     best = weights + 'best.pt'
     device_given = device is not None
     device = device if device_given else torch_utils.select_device()
+    print('device: {}'.format(device))
 
     if multi_scale:
         img_size = 608  # initiate with maximum multi_scale size
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--multi-scale', action='store_true', help='random image sizes per batch 320 - 608')
     parser.add_argument('--img-size', type=int, default=32 * 13, help='pixels')
     parser.add_argument('--resume', action='store_true', help='resume training flag')
-    parser.add_argument('--device', default='cuda:0', type=str)
+    parser.add_argument('--device', default=None, type=str)
     parser.add_argument('--train_labels_split', default='')
     opt = parser.parse_args()
     print(opt, end='\n\n')
