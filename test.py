@@ -30,7 +30,7 @@ def test(
 
     if model is None:
         # Initialize model
-        model = Darknet(cfg, img_size)
+        model = Darknet(cfg, device, img_size)
 
         # Load weights
         if weights.endswith('.pt'):  # pytorch format
