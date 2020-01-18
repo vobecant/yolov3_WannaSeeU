@@ -138,6 +138,7 @@ def train(
             for pi, pth in zip(pred, paths):
                 for pi0 in pi:
                     xys = pi0[..., 0:2]
+                    print('xys orig shape: {}'.format(xys.shape))
                     xys = xys.view(xys.shape[1], -1, xys.shape[-1])
                     whs = pi0[..., 2:4]
                     whs = xys.view(whs.shape[1], -1, whs.shape[-1])
@@ -146,8 +147,8 @@ def train(
                     max_conf_idx = torch.argmax(confs, dim=-1)
                     print('Xys: {}, whs: {}, Confs shape: {}, max idx: {}'.format(xys.shape, whs.shape, confs.shape,
                                                                                   max_conf_idx))
-                    print('{} xy: {}, wh: {}, conf: {}'.format(pth, xys[:, :, max_conf_idx, :],
-                                                               whs[:, :, max_conf_idx, :], confs[:, :, max_conf_idx]))
+                    print('{} xy: {}, wh: {}, conf: {}'.format(pth, xys[:, max_conf_idx, :],
+                                                               whs[:, max_conf_idx, :], confs[:, max_conf_idx]))
 
             # Build targets
             target_list = build_targets(model, targets, pred)
