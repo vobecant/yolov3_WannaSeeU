@@ -115,7 +115,7 @@ def train(
         ui = -1
         rloss = defaultdict(float)
         img_saved = False
-        for i, (imgs, targets, _, _) in enumerate(dataloader):
+        for i, (imgs, targets, paths, _) in enumerate(dataloader):
             targets = targets.to(device)
             nT = targets.shape[0]
             if nT == 0:  # if no targets continue
@@ -124,7 +124,8 @@ def train(
             # show training sample
             if (epoch == 0) and not img_saved:
                 ToPILImage()(imgs[0]).save('train_sample.png')
-                img_saved = True
+                fname = os.path.join('train_sammple_targets.jpg')
+                plot_images(imgs=imgs, targets=targets, paths=paths, fname=fname)
 
             # SGD burn-in
             if (epoch == 0) and (i <= n_burnin):

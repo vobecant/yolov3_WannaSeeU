@@ -1,6 +1,7 @@
 import glob
 import random
 from collections import defaultdict
+from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
@@ -393,15 +394,15 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4):
                     det_max.append(dc[j:j + 1])  # save highest conf detection
                     reject = bbox_iou(dc[j], dc[ind]) > nms_thres
                     [ind.pop(i) for i in reversed(reject.nonzero())]
-                # while dc.shape[0]:  # SLOWER METHOD
-                #     det_max.append(dc[:1])  # save highest conf detection
-                #     if len(dc) == 1:  # Stop if we're at the last detection
-                #         break
-                #     iou = bbox_iou(dc[0], dc[1:])  # iou with other boxes
-                #     dc = dc[1:][iou < nms_thres]  # remove ious > threshold
+                    # while dc.shape[0]:  # SLOWER METHOD
+                    #     det_max.append(dc[:1])  # save highest conf detection
+                    #     if len(dc) == 1:  # Stop if we're at the last detection
+                    #         break
+                    #     iou = bbox_iou(dc[0], dc[1:])  # iou with other boxes
+                    #     dc = dc[1:][iou < nms_thres]  # remove ious > threshold
 
-                # Image      Total          P          R        mAP
-                #  4964       5000      0.629      0.594      0.586
+                    # Image      Total          P          R        mAP
+                    #  4964       5000      0.629      0.594      0.586
 
             elif nms_style == 'AND':  # requires overlap, single boxes erased
                 while len(dc) > 1:
@@ -420,8 +421,8 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4):
                     det_max.append(dc[:1])
                     dc = dc[iou < nms_thres]
 
-                # Image      Total          P          R        mAP
-                #  4964       5000      0.633      0.598      0.589  # normal
+                    # Image      Total          P          R        mAP
+                    #  4964       5000      0.633      0.598      0.589  # normal
 
             if len(det_max) > 0:
                 det_max = torch.cat(det_max)
@@ -489,3 +490,29 @@ def plot_results(start=0):
             plt.title(s[i])
             if i == 0:
                 plt.legend()
+
+
+def plot_images(imgs, targets, paths=None, fname='images.jpg', show=False):
+    # Plots training images overlaid with targets
+    imgs = imgs.cpu().numpy()
+    targets = targets.cpu().numpy()
+    # targets = targets[targets[:, 1] == 21]  # plot only one class
+
+    fig = plt.figure(figsize=(10, 10))
+    bs, _, h, w = imgs.shape  # batch size, _, height, width
+    bs = min(bs, 16)  # limit plot to 16 images
+    ns = np.ceil(bs ** 0.5)  # number of subplots
+
+    for i in range(bs):
+        boxes = xywh2xyxy(targets[targets[:, 0] == i, 2:6]).T
+        boxes[[0, 2]] *= w
+        boxes[[1, 3]] *= h
+        plt.subplot(ns, ns, i + 1).imshow(imgs[i].transpose(1, 2, 0))
+        plt.plot(boxes[[0, 2, 2, 0, 0]], boxes[[1, 1, 3, 3, 1]], '.-')
+        plt.axis('off')
+        if paths is not None:
+            s = Path(paths[i]).name
+            plt.title(s[:min(len(s), 40)], fontdict={'size': 8})  # limit to 40 characters
+    fig.tight_layout()
+    fig.savefig(fname, dpi=200)
+    plt.close()
