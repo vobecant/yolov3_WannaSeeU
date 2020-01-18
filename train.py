@@ -139,11 +139,11 @@ def train(
                 for pi0 in pi:
                     xys = pi0[..., 0:2]
                     print('xys orig shape: {}'.format(xys.shape))
-                    xys = xys.view(xys.shape[1], -1, xys.shape[-1])
+                    xys = xys.view(xys.shape[0], -1, xys.shape[-1])
                     whs = pi0[..., 2:4]
-                    whs = xys.view(whs.shape[1], -1, whs.shape[-1])
+                    whs = xys.view(whs.shape[0], -1, whs.shape[-1])
                     confs = pi0[..., 4]
-                    confs = confs.view(confs.shape[1], -1)
+                    confs = confs.view(confs.shape[0], -1)
                     max_conf_idx = torch.argmax(confs, dim=-1)
                     print('Xys: {}, whs: {}, Confs shape: {}, max idx: {}'.format(xys.shape, whs.shape, confs.shape,
                                                                                   max_conf_idx))
