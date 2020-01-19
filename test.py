@@ -17,7 +17,7 @@ def test(
         iou_thres=0.5,
         conf_thres=0.3,
         nms_thres=0.45,
-        save_json=False,
+        save_json=True,
         model=None
 ):
     device = torch_utils.select_device()
@@ -151,7 +151,7 @@ def test(
         from pycocotools.cocoeval import COCOeval
 
         # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
-        cocoGt = COCO('../coco/annotations/instances_val2014.json')  # initialize COCO ground truth api
+        cocoGt = COCO('/home/vobecant/PhD/yolov3_modified/data/val_gt.json')  # initialize COCO ground truth api
         cocoDt = cocoGt.loadRes('results.json')  # initialize COCO detections api
 
         cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
