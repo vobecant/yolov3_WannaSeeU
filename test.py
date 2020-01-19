@@ -45,7 +45,7 @@ def test(
     dataloader = LoadImagesAndLabels(test_path, batch_size=batch_size, img_size=img_size)
     img_files = dataloader.img_files
     if save_json:
-        with open('./data/val_gt.json', 'r') as f:
+        with open('/home/vobecant/PhD/yolov3_modified/data/val_gt.json', 'r') as f:
             val_gt = json.load(f)
         imgs = val_gt['images']
         name2idx = {im['im_name']: im['id'] for im in imgs}
