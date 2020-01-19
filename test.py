@@ -148,10 +148,14 @@ def test(
     print('\nmAP Per Class:')
     for i, c in enumerate(load_classes(data_cfg_dict['names'])):
         if AP_accum_count[i]:
-            print('%15s: %-.4f' % (c, AP_accum[i] / (AP_accum_count[i])))
+            map2print = AP_accum[i] / (AP_accum_count[i])
+        else:
+            map2print = 0.0
+        if AP_accum_count[i]:
+            print('%15s: %-.4f' % (c, map2print))
 
     # Save JSON
-    if save_json:
+    if save_json and len(jdict):
         imgIds = [jd['image_id'] for jd in jdict]
         with open('results.json', 'w') as file:
             json.dump(jdict, file)
