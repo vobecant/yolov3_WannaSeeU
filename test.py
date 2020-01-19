@@ -43,13 +43,19 @@ def test(
     # Get dataloader
     # dataloader = torch.utils.data.DataLoader(LoadImagesAndLabels(test_path), batch_size=batch_size)
     dataloader = LoadImagesAndLabels(test_path, batch_size=batch_size, img_size=img_size)
+    img_files = dataloader.img_files
+    if save_json:
+        with open('./data/val_gt.json', 'r') as f:
+            val_gt = json.load(f)
+        imgs = val_gt['images']
+        name2idx = {im['im_name']: im['id'] for im in imgs}
 
     mean_mAP, mean_R, mean_P, seen = 0.0, 0.0, 0.0, 0
     print('%11s' * 5 % ('Image', 'Total', 'P', 'R', 'mAP'))
     mP, mR, mAPs, TP, jdict = [], [], [], [], []
     AP_accum, AP_accum_count = np.zeros(nC), np.zeros(nC)
     coco91class = coco80_to_coco91_class()
-    for (imgs, targets, paths, shapes) in dataloader:
+    for batch_i, (imgs, targets, paths, shapes) in enumerate(dataloader):
         targets = targets.to(device)
         t = time.time()
         output = model(imgs.to(device))
@@ -74,6 +80,9 @@ def test(
 
             if save_json:
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
+                order_id = batch_size * batch_i + si  # int(Path(paths[si]).stem.split('_')[-1])
+                image_name = os.path.split(img_files[order_id])[1]
+                image_id = name2idx[image_name]
                 box = detections[:, :4].clone()  # xyxy
                 scale_coords(img_size, box, shapes[si])  # to original shape
                 box = xyxy2xywh(box)  # xywh
@@ -82,7 +91,7 @@ def test(
                 # add to json dictionary
                 for di, d in enumerate(detections):
                     jdict.append({
-                        'image_id': int(Path(paths[si]).stem.split('_')[-1]),
+                        'image_id': image_id,
                         'category_id': coco91class[int(d[6])],
                         'bbox': [float3(x) for x in box[di]],
                         'score': float3(d[4] * d[5])
@@ -143,7 +152,7 @@ def test(
 
     # Save JSON
     if save_json:
-        imgIds = [int(Path(x).stem.split('_')[-1]) for x in dataloader.img_files]
+        imgIds = [jd['image_id'] for jd in jdict]
         with open('results.json', 'w') as file:
             json.dump(jdict, file)
 
